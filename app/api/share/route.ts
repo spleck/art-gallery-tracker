@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { ShareType } from "@prisma/client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,7 +32,7 @@ export async function POST(request: NextRequest) {
     // Create share link
     const shareLink = await prisma.shareLink.create({
       data: {
-        type: type as ShareType,
+        type,
         slug,
         artItems: {
           connect: artIds.map((id) => ({ id })),

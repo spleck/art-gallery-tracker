@@ -2,6 +2,8 @@ import { prisma } from "@/lib/db";
 import ArtCard from "@/components/ArtCard";
 import AddArtForm from "@/components/AddArtForm";
 
+export const dynamic = "force-dynamic";
+
 export default async function ArtPage() {
   const ownedArt = await prisma.art.findMany({
     where: { status: "OWNED" },

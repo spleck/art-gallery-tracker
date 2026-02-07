@@ -6,6 +6,8 @@ interface PageProps {
   params: { shareId: string };
 }
 
+export const dynamic = "force-dynamic";
+
 export default async function SharedGalleryPage({ params }: PageProps) {
   const { shareId } = params;
 

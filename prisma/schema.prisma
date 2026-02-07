@@ -15,28 +15,17 @@ model Art {
   imageUrl    String
   location    String?   // Gallery or event name
   qrCode      String?   @unique // For gallery QR scanning
-  status      ArtStatus
+  status      String    // "OWNED" or "INTERESTED"
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   shareLinks  ShareLink[]
 }
 
-enum ArtStatus {
-  OWNED
-  INTERESTED
-}
-
 model ShareLink {
   id        String    @id @default(cuid())
-  type      ShareType
+  type      String    // "OWNED", "INTERESTED", or "BOTH"
   slug      String    @unique
   artItems  Art[]
   createdAt DateTime  @default(now())
   expiresAt DateTime?
-}
-
-enum ShareType {
-  OWNED
-  INTERESTED
-  BOTH
 }
