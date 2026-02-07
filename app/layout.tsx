@@ -24,6 +24,7 @@ export default function RootLayout({
             <div className="max-w-4xl mx-auto flex gap-4 items-center">
               <a href="/" className="font-bold">🎨 Art Tracker</a>
               <a href="/art" className="hover:underline">My Art</a>
+              <a href="/friends" className="hover:underline">Friends</a>
               <a href="/scan" className="hover:underline">Scan QR</a>
               <a href="/share" className="hover:underline">Share</a>
               <div className="ml-auto">
