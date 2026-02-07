@@ -4,9 +4,20 @@ import { writeFile } from "fs/promises";
 import { mkdir } from "fs/promises";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const formData = await request.formData();
     
     const title = formData.get("title") as string;
@@ -36,9 +47,10 @@ export async function POST(request: NextRequest) {
     
     const imageUrl = `/uploads/${fileName}`;
 
-    // Create art record
+    // Create art record with userId
     const art = await prisma.art.create({
       data: {
+        userId: session.user.id,
         title,
         artist,
         description,
@@ -60,7 +72,17 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const art = await prisma.art.findMany({
+      where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json(art);

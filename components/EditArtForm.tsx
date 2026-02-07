@@ -1,10 +1,16 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { Art } from "@prisma/client";
 
-export default function AddArtForm() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [preview, setPreview] = useState<string | null>(null);
+interface EditArtFormProps {
+  art: Art;
+  onSave: () => void;
+  onCancel: () => void;
+}
+
+export default function EditArtForm({ art, onSave, onCancel }: EditArtFormProps) {
+  const [preview, setPreview] = useState<string | null>(art.imageUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -17,36 +23,35 @@ export default function AddArtForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
-    const response = await fetch("/api/art", {
-      method: "POST",
+
+    const response = await fetch(`/api/art/${art.id}`, {
+      method: "PUT",
       body: formData,
     });
 
     if (response.ok) {
-      setIsOpen(false);
-      setPreview(null);
-      window.location.reload();
-    } else if (response.status === 401) {
-      alert("Please sign in to add art");
+      onSave();
     }
   };
 
-  if (!isOpen) {
-    return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
-        + Add Art
-      </button>
-    );
-  }
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this art?")) {
+      return;
+    }
+
+    const response = await fetch(`/api/art/${art.id}`, {
+      method: "DELETE",
+    });
+
+    if (response.ok) {
+      onSave();
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="bg-slate-50 p-6 rounded-lg space-y-4">
-      <h3 className="font-semibold text-lg">Add New Art</h3>
-      
+      <h3 className="font-semibold text-lg">Edit Art</h3>
+
       <div>
         <label className="block text-sm font-medium mb-1">Photo</label>
         <input
@@ -56,7 +61,6 @@ export default function AddArtForm() {
           ref={fileInputRef}
           onChange={handleFileChange}
           className="w-full"
-          required
         />
         {preview && (
           <img src={preview} alt="Preview" className="mt-2 max-h-48 rounded" />
@@ -68,6 +72,7 @@ export default function AddArtForm() {
         <input
           type="text"
           name="title"
+          defaultValue={art.title}
           className="w-full p-2 border rounded"
           required
         />
@@ -78,6 +83,7 @@ export default function AddArtForm() {
         <input
           type="text"
           name="artist"
+          defaultValue={art.artist || ""}
           className="w-full p-2 border rounded"
         />
       </div>
@@ -87,6 +93,7 @@ export default function AddArtForm() {
         <input
           type="text"
           name="location"
+          defaultValue={art.location || ""}
           className="w-full p-2 border rounded"
         />
       </div>
@@ -96,13 +103,14 @@ export default function AddArtForm() {
         <textarea
           name="description"
           rows={3}
+          defaultValue={art.description || ""}
           className="w-full p-2 border rounded"
         />
       </div>
 
       <div>
         <label className="block text-sm font-medium mb-1">Status</label>
-        <select name="status" className="w-full p-2 border rounded">
+        <select name="status" defaultValue={art.status} className="w-full p-2 border rounded">
           <option value="OWNED">I Own This</option>
           <option value="INTERESTED">Interested In</option>
         </select>
@@ -113,14 +121,21 @@ export default function AddArtForm() {
           type="submit"
           className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
         >
-          Save
+          Save Changes
         </button>
         <button
           type="button"
-          onClick={() => setIsOpen(false)}
+          onClick={onCancel}
           className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
         >
           Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleDelete}
+          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 ml-auto"
+        >
+          Delete
         </button>
       </div>
     </form>

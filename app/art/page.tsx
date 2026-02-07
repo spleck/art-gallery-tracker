@@ -1,19 +1,55 @@
-import { prisma } from "@/lib/db";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { Art } from "@prisma/client";
 import ArtCard from "@/components/ArtCard";
 import AddArtForm from "@/components/AddArtForm";
 
-export const dynamic = "force-dynamic";
+export default function ArtPage() {
+  const { data: session, status } = useSession();
+  const [ownedArt, setOwnedArt] = useState<Art[]>([]);
+  const [interestedArt, setInterestedArt] = useState<Art[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default async function ArtPage() {
-  const ownedArt = await prisma.art.findMany({
-    where: { status: "OWNED" },
-    orderBy: { createdAt: "desc" },
-  });
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetchArt();
+    } else if (status === "unauthenticated") {
+      setLoading(false);
+    }
+  }, [status]);
 
-  const interestedArt = await prisma.art.findMany({
-    where: { status: "INTERESTED" },
-    orderBy: { createdAt: "desc" },
-  });
+  const fetchArt = async () => {
+    try {
+      const response = await fetch("/api/art");
+      if (response.ok) {
+        const art = await response.json();
+        setOwnedArt(art.filter((a: Art) => a.status === "OWNED"));
+        setInterestedArt(art.filter((a: Art) => a.status === "INTERESTED"));
+      }
+    } catch (error) {
+      console.error("Error fetching art:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (status === "loading" || loading) {
+    return <div className="text-center py-12">Loading...</div>;
+  }
+
+  if (status === "unauthenticated") {
+    return (
+      <div className="text-center py-12">
+        <h1 className="text-2xl font-bold mb-4">My Art</h1>
+        <p className="text-gray-600 mb-4">Please sign in to view your art collection</p>
+        <a href="/signin" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          Sign In
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
