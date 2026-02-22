@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { FriendStatus } from "@/lib/constants";
 
 // Get all friends (pending and accepted)
 export async function GET(request: NextRequest) {

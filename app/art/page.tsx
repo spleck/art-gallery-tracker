@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { Art } from "@prisma/client";
 import ArtCard from "@/components/ArtCard";
 import AddArtForm from "@/components/AddArtForm";
+import { ArtStatus } from "@/lib/constants";
 
 export default function ArtPage() {
   const { data: session, status } = useSession();
@@ -25,8 +26,8 @@ export default function ArtPage() {
       const response = await fetch("/api/art");
       if (response.ok) {
         const art = await response.json();
-        setOwnedArt(art.filter((a: Art) => a.status === "OWNED"));
-        setInterestedArt(art.filter((a: Art) => a.status === "INTERESTED"));
+        setOwnedArt(art.filter((a: Art) => a.status === ArtStatus.OWNED));
+        setInterestedArt(art.filter((a: Art) => a.status === ArtStatus.INTERESTED));
       }
     } catch (error) {
       console.error("Error fetching art:", error);
@@ -55,7 +56,7 @@ export default function ArtPage() {
     <div className="space-y-8">
       <h1 className="text-3xl font-bold">My Art</h1>
       
-      <AddArtForm />
+      <AddArtForm onSave={fetchArt} />
       
       <section>
         <h2 className="text-2xl font-semibold mb-4">🖼️ Art I Own ({ownedArt.length})</h2>

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import ArtCard from "@/components/ArtCard";
+import { ShareType } from "@/lib/constants";
 
 interface PageProps {
   params: { shareId: string };
@@ -24,10 +25,15 @@ export default async function SharedGalleryPage({ params }: PageProps) {
     notFound();
   }
 
+  // Check if the share link has expired
+  if (shareLink.expiresAt && new Date(shareLink.expiresAt) < new Date()) {
+    notFound();
+  }
+
   const typeLabel = {
-    OWNED: "Art Collection",
-    INTERESTED: "Art Wishlist",
-    BOTH: "Art Gallery",
+    [ShareType.OWNED]: "Art Collection",
+    [ShareType.INTERESTED]: "Art Wishlist",
+    [ShareType.BOTH]: "Art Gallery",
   }[shareLink.type];
 
   return (

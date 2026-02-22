@@ -1,35 +1,65 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { ArtStatus } from "@/lib/constants";
 
-export default function AddArtForm() {
+interface AddArtFormProps {
+  onSave: () => void;
+}
+
+export default function AddArtForm({ onSave }: AddArtFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setPreview(URL.createObjectURL(file));
+      setError(null);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    
-    const response = await fetch("/api/art", {
-      method: "POST",
-      body: formData,
-    });
+    setIsSubmitting(true);
+    setError(null);
 
-    if (response.ok) {
-      setIsOpen(false);
-      setPreview(null);
-      window.location.reload();
-    } else if (response.status === 401) {
-      alert("Please sign in to add art");
+    try {
+      const formData = new FormData(e.currentTarget);
+
+      const response = await fetch("/api/art", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        setIsOpen(false);
+        setPreview(null);
+        formRef.current?.reset();
+        onSave();
+      } else if (response.status === 401) {
+        setError("Please sign in to add art");
+      } else {
+        const data = await response.json();
+        setError(data.error || "Failed to add art. Please try again.");
+      }
+    } catch (err) {
+      setError("Network error. Please check your connection and try again.");
+      console.error("Error submitting form:", err);
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const handleCancel = () => {
+    setIsOpen(false);
+    setPreview(null);
+    setError(null);
+    formRef.current?.reset();
   };
 
   if (!isOpen) {
@@ -44,9 +74,15 @@ export default function AddArtForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-slate-50 p-6 rounded-lg space-y-4">
+    <form ref={formRef} onSubmit={handleSubmit} className="bg-slate-50 p-6 rounded-lg space-y-4">
       <h3 className="font-semibold text-lg">Add New Art</h3>
-      
+
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
+
       <div>
         <label className="block text-sm font-medium mb-1">Photo</label>
         <input
@@ -57,6 +93,7 @@ export default function AddArtForm() {
           onChange={handleFileChange}
           className="w-full"
           required
+          disabled={isSubmitting}
         />
         {preview && (
           <img src={preview} alt="Preview" className="mt-2 max-h-48 rounded" />
@@ -70,6 +107,7 @@ export default function AddArtForm() {
           name="title"
           className="w-full p-2 border rounded"
           required
+          disabled={isSubmitting}
         />
       </div>
 
@@ -79,6 +117,7 @@ export default function AddArtForm() {
           type="text"
           name="artist"
           className="w-full p-2 border rounded"
+          disabled={isSubmitting}
         />
       </div>
 
@@ -88,6 +127,7 @@ export default function AddArtForm() {
           type="text"
           name="location"
           className="w-full p-2 border rounded"
+          disabled={isSubmitting}
         />
       </div>
 
@@ -97,28 +137,31 @@ export default function AddArtForm() {
           name="description"
           rows={3}
           className="w-full p-2 border rounded"
+          disabled={isSubmitting}
         />
       </div>
 
       <div>
         <label className="block text-sm font-medium mb-1">Status</label>
-        <select name="status" className="w-full p-2 border rounded">
-          <option value="OWNED">I Own This</option>
-          <option value="INTERESTED">Interested In</option>
+        <select name="status" className="w-full p-2 border rounded" disabled={isSubmitting}>
+          <option value={ArtStatus.OWNED}>I Own This</option>
+          <option value={ArtStatus.INTERESTED}>Interested In</option>
         </select>
       </div>
 
       <div className="flex gap-2">
         <button
           type="submit"
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          disabled={isSubmitting}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Save
+          {isSubmitting ? "Saving..." : "Save"}
         </button>
         <button
           type="button"
-          onClick={() => setIsOpen(false)}
-          className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+          onClick={handleCancel}
+          disabled={isSubmitting}
+          className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400 disabled:opacity-50"
         >
           Cancel
         </button>

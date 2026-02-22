@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { writeFile } from "fs/promises";
+import { writeFile, unlink } from "fs/promises";
 import { mkdir } from "fs/promises";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { ArtStatus } from "@/lib/constants";
+import { ArtStatus } from "@/lib/constants";
 
 export async function PUT(
   request: NextRequest,
@@ -28,8 +30,13 @@ export async function PUT(
     const artist = formData.get("artist") as string | null;
     const description = formData.get("description") as string | null;
     const location = formData.get("location") as string | null;
-    const status = formData.get("status") as "OWNED" | "INTERESTED";
+    const statusValue = formData.get("status") as string;
     const imageFile = formData.get("image") as File | null;
+
+    // Validate status is a valid enum value
+    const status = Object.values(ArtStatus).includes(statusValue as ArtStatus)
+      ? (statusValue as ArtStatus)
+      : ArtStatus.OWNED;
 
     if (!title) {
       return NextResponse.json(
@@ -109,9 +116,22 @@ export async function DELETE(
       return NextResponse.json({ error: "Art not found" }, { status: 404 });
     }
 
+    // Delete the art record first
     await prisma.art.delete({
       where: { id },
     });
+
+    // Delete the associated image file if it exists
+    if (existingArt.imageUrl) {
+      try {
+        const fileName = path.basename(existingArt.imageUrl);
+        const filePath = path.join(process.cwd(), "uploads", fileName);
+        await unlink(filePath);
+      } catch (error) {
+        // Log error but don't fail the request if image deletion fails
+        console.error("Error deleting image file:", error);
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

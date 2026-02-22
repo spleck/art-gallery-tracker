@@ -6,6 +6,7 @@ import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { ArtStatus } from "@/lib/constants";
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,8 +25,13 @@ export async function POST(request: NextRequest) {
     const artist = formData.get("artist") as string | null;
     const description = formData.get("description") as string | null;
     const location = formData.get("location") as string | null;
-    const status = formData.get("status") as "OWNED" | "INTERESTED";
+    const statusValue = formData.get("status") as string;
     const imageFile = formData.get("image") as File;
+
+    // Validate status is a valid enum value
+    const status = Object.values(ArtStatus).includes(statusValue as ArtStatus)
+      ? (statusValue as ArtStatus)
+      : ArtStatus.OWNED;
 
     if (!title || !imageFile) {
       return NextResponse.json(
